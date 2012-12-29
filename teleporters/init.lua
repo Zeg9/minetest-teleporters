@@ -172,9 +172,9 @@ minetest.register_abm({
 minetest.register_craft({
 	output = '"teleporters:spiral" 16',
 	recipe = {
-	{"default:coal_lump","default:mese","default:coal_lump"},
-	{"default:mese","","default:mese"},
-	{"default:coal_lump","default:mese","default:coal_lump"}
+	{"default:coal_lump","default:mese_crystal","default:coal_lump"},
+	{"default:mese_crystal","","default:mese_crystal"},
+	{"default:coal_lump","default:mese_crystal","default:coal_lump"}
 	}
 })
 
