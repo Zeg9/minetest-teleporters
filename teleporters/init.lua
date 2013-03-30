@@ -8,7 +8,6 @@ teleporters = {}
 teleporters.go_up_effect = true
 -- end
 
-teleporters.block_groups = {cracky=2}
 teleporters.copy_pos = function (_pos)
 	return {x=_pos.x, y=_pos.y, z=_pos.z}
 end
@@ -100,22 +99,15 @@ end
 
 -- Nodes and items
 
-minetest.register_craftitem("teleporters:spiral", {
-	description = "Mese spiral",
-	inventory_image = "teleporters_spiral.png",
-})
-
-minetest.register_node("teleporters:base", {
-	description = "Teleporter base",
-	tiles = {"teleporters_base.png"},
-	groups = teleporters.block_groups,
-	light_source = 10,
-})
-
 minetest.register_node("teleporters:teleporter", {
 	description = "Teleporter",
-	tiles = {"teleporters_base.png^teleporters_spiral.png","teleporters_base.png"},
-	groups = teleporters.block_groups,
+	tiles = {
+		"teleporters_top.png",
+		"teleporters_bottom.png",
+		"teleporters_side.png",
+	},
+	groups = {cracky=1},
+	sounds = default.node_sound_stone_defaults(),
 	light_source = 10,
 	on_construct = function(pos)
 		id = teleporters.get_new_id()
@@ -170,23 +162,11 @@ minetest.register_abm({
 -- Crafting
 
 minetest.register_craft({
-	output = '"teleporters:spiral" 16',
-	recipe = {
-	{"default:coal_lump","default:mese_crystal","default:coal_lump"},
-	{"default:mese_crystal","","default:mese_crystal"},
-	{"default:coal_lump","default:mese_crystal","default:coal_lump"}
-	}
-})
-
-minetest.register_craft({
-	output = '"teleporters:base" 4',
-	type = "shapeless",
-	recipe = {"default:steel_ingot","default:steel_ingot","default:mese","default:mese","bucket:bucket_lava"},
-	replacements = {{"bucket:bucket_lava", "bucket:bucket_empty"}}
-})
-
-minetest.register_craft({
 	output = "teleporters:teleporter",
-	recipe = { {"teleporters:spiral"}, {"teleporters:base"} },
+	recipe = {
+		{"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
+		{"default:steel_ingot", "default:mese", "default:steel_ingot"},
+		{"default:diamond", "default:diamond", "default:diamond"}
+	},
 })
 
