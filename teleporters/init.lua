@@ -165,7 +165,7 @@ minetest.register_craft({
 	output = "teleporters:teleporter",
 	recipe = {
 		{"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
-		{"default:steel_ingot", "default:mese", "default:steel_ingot"},
+		{"default:steel_ingot", "default:obsidian", "default:steel_ingot"},
 		{"default:diamond", "default:diamond", "default:diamond"}
 	},
 })
