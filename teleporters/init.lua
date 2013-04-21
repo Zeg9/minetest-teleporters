@@ -4,9 +4,9 @@
 
 teleporters = {}
 
--- config
-teleporters.go_up_effect = true
--- end
+--Configuration
+local PLAYER_COOLDOWN = 1
+-- end config
 
 teleporters.copy_pos = function (_pos)
 	return {x=_pos.x, y=_pos.y, z=_pos.z}
@@ -94,7 +94,12 @@ teleporters.make_formspec = function (meta)
 end
 
 teleporters.teleport = function (params)
-	params.obj:setpos(params.pos)
+	params.obj:setpos(params.target)
+	print(dump(params.target))
+end
+
+teleporters.reset_cooldown = function (params)
+	teleporters.is_teleporting[params.playername] = false
 end
 
 -- Nodes and items
@@ -127,8 +132,39 @@ minetest.register_node("teleporters:teleporter", {
 	end,
 })
 
--- ABM
+teleporters.is_teleporting = {}
 
+teleporters.use_teleporter = function(obj,pos)
+	if obj:is_player() then
+		if teleporters.is_teleporting[obj:get_player_name()] then
+			return
+		end
+		teleporters.is_teleporting[obj:get_player_name()] = true
+	end
+	local meta = minetest.env:get_meta(pos)
+	if false then -- TODO make a better way to link them (I know how to, just feel lazy today)
+	else -- Backward compatibility with older versions
+		minetest.sound_play("teleporters_teleport",{pos=pos,gain=1,max_hear_distance=32})
+		if meta:get_int("id") %2 == 0 then newpos = teleporters.network[meta:get_int("id")-1]
+		else newpos = teleporters.network[meta:get_int("id")+1] end
+		if not newpos then newpos = pos end
+		newpos = teleporters.copy_pos(newpos)
+		newpos = teleporters.find_safe(newpos)
+		if obj:is_player() then
+			minetest.sound_play("teleporters_teleport",{gain=1,to_player=obj:get_player_name()})
+		end
+		newpos.y = newpos.y + .5
+		newpos.y = newpos.y -1
+		teleporters.teleport({obj=obj,target=newpos})
+		newpos.y = newpos.y +1
+		minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos})
+		if obj:is_player() then
+			minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=obj:get_player_name()})
+		end
+	end
+end
+
+-- ABM is kept for items and other objects
 minetest.register_abm({
 	nodenames = {"teleporters:teleporter"},
 	interval = 1,
@@ -139,25 +175,23 @@ minetest.register_abm({
 		local objs = minetest.env:get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
 		for _, obj in pairs(objs) do
-			minetest.sound_play("teleporters_teleport",{pos=pos,gain=1,max_hear_distance=32})
-			if meta:get_int("id") %2 == 0 then newpos = teleporters.network[meta:get_int("id")-1]
-			else newpos = teleporters.network[meta:get_int("id")+1] end
-			if not newpos then newpos = pos end
-			newpos = teleporters.copy_pos(newpos)
-			minetest.sound_play("teleporters_teleport",{gain=1,to_player=obj:get_player_name()})
-			newpos = teleporters.find_safe(newpos)
-			newpos.y = newpos.y + .5
-			if teleporters.go_up_effect then
-				newpos.y = newpos.y -1
-				teleporters.teleport({obj=obj,pos=newpos})
-				newpos.y = newpos.y +1
-				minetest.after(.1, teleporters.teleport, {obj=obj,pos=newpos})
-			else
-				teleporters.teleport({obj=obj,pos=newpos})
-			end
+			teleporters.use_teleporter(obj,pos)
 		end
 	end,
 })
+
+-- globalstep for players
+minetest.register_globalstep(function(dtime)
+	for i, player in ipairs(minetest.get_connected_players()) do
+		pos = player:getpos()
+		pos = {x=math.floor(pos.x+.5),y=math.floor(pos.y),z=math.floor(pos.z+.5)}
+		if minetest.env:get_node(pos).name == "teleporters:teleporter" then
+			if minetest.env:get_meta(pos):get_int("id") > 0 then
+				teleporters.use_teleporter(player,pos)
+			end
+		end
+	end
+end)
 
 -- Crafting
 
