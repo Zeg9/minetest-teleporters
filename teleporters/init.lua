@@ -6,6 +6,7 @@ teleporters = {}
 
 --Configuration
 local PLAYER_COOLDOWN = 1
+local going_up_effect = true
 -- end config
 
 teleporters.copy_pos = function (_pos)
@@ -30,16 +31,19 @@ end
 
 teleporters.find_safe = function (_pos)
 	pos = teleporters.copy_pos(_pos)
-	pos.x = pos.x +1 if teleporters.is_safe(pos) then return pos end
+
+	pos.x = pos.x +1
+	if teleporters.is_safe(pos) then return pos end
+
+	pos.x = pos.x -2
+	if teleporters.is_safe(pos) then return pos end
+
+	pos.x = pos.x +1
+	pos.z = pos.z +1
+	if teleporters.is_safe(pos) then return pos end
 	
-	pos = teleporters.copy_pos(_pos)
-	pos.x = pos.x -1 if teleporters.is_safe(pos) then return pos end
-	
-	pos = teleporters.copy_pos(_pos)
-	pos.z = pos.z +1 if teleporters.is_safe(pos) then return pos end
-	
-	pos = teleporters.copy_pos(_pos)
-	pos.z = pos.z -1 if teleporters.is_safe(pos) then return pos end
+	pos.z = pos.z -2
+	if teleporters.is_safe(pos) then return pos end
 	
 	return _pos
 end
@@ -144,19 +148,21 @@ teleporters.use_teleporter = function(obj,pos)
 	local meta = minetest.env:get_meta(pos)
 	if false then -- TODO make a better way to link them (I know how to, just feel lazy today)
 	else -- Backward compatibility with older versions
-		minetest.sound_play("teleporters_teleport",{pos=pos,gain=1,max_hear_distance=32})
+		minetest.sound_play("teleporters_teleport",{pos=pos,gain=0.5,max_hear_distance=32})
 		if meta:get_int("id") %2 == 0 then newpos = teleporters.network[meta:get_int("id")-1]
 		else newpos = teleporters.network[meta:get_int("id")+1] end
-		if not newpos then newpos = pos end
+		if not newpos then newpos = teleporters.find_safe(pos) end
 		newpos = teleporters.copy_pos(newpos)
 		newpos = teleporters.find_safe(newpos)
 		if obj:is_player() then
-			minetest.sound_play("teleporters_teleport",{gain=1,to_player=obj:get_player_name()})
+			minetest.sound_play("teleporters_teleport",{gain=0.5,to_player=obj:get_player_name()})
 		end
-		newpos.y = newpos.y + .5
-		newpos.y = newpos.y -1
-		teleporters.teleport({obj=obj,target=newpos})
-		newpos.y = newpos.y +1
+		newpos.y = newpos.y + .5			
+		if going_up_effect then
+			newpos.y = newpos.y-1
+			teleporters.teleport({obj=obj,target=newpos})
+			newpos.y = newpos.y+1
+		end
 		minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos})
 		if obj:is_player() then
 			minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=obj:get_player_name()})
