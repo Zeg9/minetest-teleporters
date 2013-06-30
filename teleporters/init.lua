@@ -49,7 +49,6 @@ dofile(minetest.get_modpath("teleporters").."/legacy.lua")
 
 teleporters.make_formspec = function (meta)
 	formspec = "size[6,3]" ..
-	"label[0,0;Teleporter #"..meta:get_int("id").."]"..
 	"field[1,1.25;4.5,1;desc;Description;"..meta:get_string("infotext").."]"..
 	"button_exit[2,2;2,1;save;Save]"
 	return formspec
@@ -83,6 +82,8 @@ minetest.register_node("teleporters:teleporter", {
 	after_place_node = function(pos, placer, itemstack)
 		local meta = minetest.get_meta(pos)
 		local name = placer:get_player_name()
+		meta:set_string("infotext","Teleporter")
+		meta:set_string("formspec",teleporters.make_formspec(meta))
 		if teleporters.selected[name] then
 			-- link teleporters
 			local target = teleporters.selected[name]
@@ -116,9 +117,11 @@ teleporters.use_teleporter = function(obj,pos)
 	local target = pos
 	if meta:get_string("target") ~= "" then
 		target = minetest.string_to_pos(meta:get_string("target"))
-	elseif meta:get_stirng("id") > 0 then -- Compatibility with older versions
+	elseif meta:get_int("id") > 0 then -- Compatibility with older versions
 		if meta:get_int("id") %2 == 0 then target = teleporters.network[meta:get_int("id")-1]
 		else target = teleporters.network[meta:get_int("id")+1] end
+		meta:set_string("target",minetest.pos_to_string(target)) -- convert to new behavior
+		meta:set_string("formspec", teleporters.make_formspec(meta))
 	end
 	
 	local newpos = teleporters.find_safe(teleporters.copy_pos(target))
