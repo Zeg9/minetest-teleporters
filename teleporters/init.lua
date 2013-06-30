@@ -107,7 +107,8 @@ end
 minetest.register_node("teleporters:teleporter", {
 	description = "Teleporter",
 	tiles = {
-		"teleporters_top.png",
+		--"teleporters_top.png",
+		{name="teleporters_top_animated.png", animation={type="vertical_frames", aspect_w=16, aspect_h=16, length=0.5}},
 		"teleporters_bottom.png",
 		"teleporters_side.png",
 	},
