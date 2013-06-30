@@ -66,8 +66,41 @@ end
 teleporters.selected = {}
 -- teleporters.selected[player_name] = pos
 
+
+local hacky_swap_node = function(pos,name)
+	local node = minetest.get_node(pos)
+	local meta = minetest.get_meta(pos)
+	local meta0 = meta:to_table()
+	if node.name == name then
+		return
+	end
+	node.name = name
+	local meta0 = meta:to_table()
+	minetest.set_node(pos,node)
+	meta = minetest.get_meta(pos)
+	meta:from_table(meta0)
+end
+
 -- Nodes and items
 
+minetest.register_node("teleporters:unlinked", {
+	description = "Teleporter (unlinked)",
+	tiles = {
+		"teleporters_top_unlinked.png",
+		"teleporters_bottom.png",
+		"teleporters_side.png",
+	},
+	groups = {cracky=1,not_in_creative_inventory=1},
+	sounds = default.node_sound_stone_defaults(),
+	on_receive_fields = function(pos, formname, fields, sender)
+		if fields.desc then
+			local meta = minetest.env:get_meta(pos)
+			meta:set_string("infotext",fields.desc)
+			meta:set_string("formspec",teleporters.make_formspec(meta))
+		end
+	end,
+	drop = "teleporters:teleporter",
+})
 minetest.register_node("teleporters:teleporter", {
 	description = "Teleporter",
 	tiles = {
@@ -87,11 +120,16 @@ minetest.register_node("teleporters:teleporter", {
 		if teleporters.selected[name] then
 			-- link teleporters
 			local target = teleporters.selected[name]
+			local target_name = minetest.get_node(target).name
+			if target_name ~= "teleporters:unlinked" then return end
 			meta:set_string("target",minetest.pos_to_string(target))
 			local target_meta = minetest.get_meta(target)
 			target_meta:set_string("target",minetest.pos_to_string(pos))
 			teleporters.selected[name] = nil
+			hacky_swap_node(pos, "teleporters:teleporter")
+			hacky_swap_node(target, "teleporters:teleporter")
 		else
+			hacky_swap_node(pos, "teleporters:unlinked")
 			teleporters.selected[name] = pos
 		end
 	end,
@@ -102,7 +140,9 @@ minetest.register_node("teleporters:teleporter", {
 			meta:set_string("formspec",teleporters.make_formspec(meta))
 		end
 	end,
+	node_placement_prediction = "teleporters:unlinked",
 })
+
 
 teleporters.is_teleporting = {}
 
@@ -142,6 +182,14 @@ minetest.register_abm({
 	chance = 1,
 	action = function(pos, node)
 		local meta = minetest.env:get_meta(pos)
+		if meta:get_string("target") ~= "" then
+			local target = minetest.string_to_pos(meta:get_string("target"))
+			local target_name = minetest.get_node(target).name
+			if target_name ~= "ignore" and target_name ~= "teleporters:teleporter" then -- target has been removed, unlink
+				meta:set_string("target","")
+				hacky_swap_node(pos,"teleporters:unlinked")
+			end
+		end
 		pos.y = pos.y+.5
 		local objs = minetest.env:get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
