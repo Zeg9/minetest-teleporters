@@ -117,17 +117,21 @@ minetest.register_node("teleporters:teleporter", {
 		local name = placer:get_player_name()
 		meta:set_string("infotext","Teleporter")
 		meta:set_string("formspec",teleporters.make_formspec(meta))
-		if teleporters.selected[name] then
+		if teleporters.selected[name] ~= nil then
 			-- link teleporters
 			local target = teleporters.selected[name]
-			local target_name = minetest.get_node(target).name
-			if target_name ~= "teleporters:unlinked" then return end
-			meta:set_string("target",minetest.pos_to_string(target))
-			local target_meta = minetest.get_meta(target)
-			target_meta:set_string("target",minetest.pos_to_string(pos))
-			teleporters.selected[name] = nil
-			hacky_swap_node(pos, "teleporters:teleporter")
-			hacky_swap_node(target, "teleporters:teleporter")
+			if target.x == pos.x and target.y == pos.y and target.z == pos.z then
+				hacky_swap_node(pos, "teleporters:unlinked")
+			else
+				local target_name = minetest.get_node(target).name
+				if target_name ~= "teleporters:unlinked" then return end
+				meta:set_string("target",minetest.pos_to_string(target))
+				local target_meta = minetest.get_meta(target)
+				target_meta:set_string("target",minetest.pos_to_string(pos))
+				hacky_swap_node(pos, "teleporters:teleporter")
+				hacky_swap_node(target, "teleporters:teleporter")
+				teleporters.selected[name] = nil
+			end
 		else
 			hacky_swap_node(pos, "teleporters:unlinked")
 			teleporters.selected[name] = pos
