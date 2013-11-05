@@ -124,7 +124,10 @@ minetest.register_node("teleporters:teleporter", {
 				hacky_swap_node(pos, "teleporters:unlinked")
 			else
 				local target_name = minetest.get_node(target).name
-				if target_name ~= "teleporters:unlinked" then return end
+				if target_name ~= "teleporters:unlinked" then
+					teleporters.selected[name] = nil
+					return
+				end
 				meta:set_string("target",minetest.pos_to_string(target))
 				local target_meta = minetest.get_meta(target)
 				target_meta:set_string("target",minetest.pos_to_string(pos))
